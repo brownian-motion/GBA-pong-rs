@@ -1,0 +1,56 @@
+# see https://github.com/sagiegurari/cargo-make and https://github.com/rust-console/gba/blob/master/Makefile.toml
+[config]
+skip_core_tasks = true
+
+[tasks.format]
+install_crate = "rust_fmt"
+command = "cargo"
+args = ["fmt", "--", "--emit=files"]
+
+[tasks.clean]
+command = "cargo"
+args = ["clean"]
+
+[tasks.build-targetDir]
+script_runner = "@rust"
+script = ['''
+fn main() {
+	std::fs::DirBuilder::new()
+	    .recursive(true) // required to succeed if directory already exists
+	    .create("target")
+	    .expect("Could not create target directory")
+}
+''']
+args = ["--force"]
+
+[tasks.build-crt0]
+command = "arm-none-eabi-as"
+args = ["crt0.s", "-o", "target/crt0.o"]
+dependencies = ["build-targetDir"]
+
+[tasks.build-rustSources]
+command = "cargo"
+args = ["xbuild", "--target", "thumbv4-none-agb.json", "--release"]
+dependencies = ["build-crt0"]
+
+[tasks.build-prepareRom]
+command = "arm-none-eabi-objcopy"
+args = ["-O", "binary", "target/thumbv4-none-agb/release/rust-gba-pong", "target/rusty-pong.gba"]
+dependencies = ["build-rustSources"]
+
+[tasks.build-fixRom]
+command = "gbafix"
+args = ["target/rusty-pong.gba"]
+dependencies = ["build-prepareRom"]
+
+[tasks.build]
+clear = true
+dependencies = ["build-fixRom"]
+
+[tasks.run]
+clear = true
+command = "mgba"
+args = ["target/rusty-pong.gba"]
+
+[tasks.default]
+alias = "build"
