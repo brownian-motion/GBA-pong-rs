@@ -51,6 +51,7 @@ dependencies = ["build-fixRom"]
 clear = true
 command = "mgba"
 args = ["target/rusty-pong.gba"]
+dependencies = ["build"]
 
 [tasks.default]
 alias = "build"
